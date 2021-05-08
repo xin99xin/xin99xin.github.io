@@ -87,7 +87,7 @@ export default {
     // 创建网格模型
     createMesh() {
       const textLoader = new THREE.FontLoader();
-      const url = "/zcoolqingkehuangyouti_Regular.json";
+      const url = "zcoolqingkehuangyouti_Regular.json";
       // 导入字体
       textLoader.load(url, (font) => {
         const options = {
