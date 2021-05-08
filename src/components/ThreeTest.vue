@@ -14,35 +14,35 @@ export default {
       properties: {
         size: {
           name: "size",
-          value: 20,
+          value: 10,
           min: 0,
           max: 100,
           step: 1,
         },
         height: {
           name: "height",
-          value: 20,
+          value: 3,
           min: 0,
           max: 100,
           step: 1,
         },
         bevelThickness: {
           name: "bevelThickness",
-          value: 2,
+          value: 0,
           min: 0,
           max: 10,
           step: 0.1,
         },
         bevelSize: {
           name: "bevelSize",
-          value: 0.5,
+          value: 1,
           min: 0,
           max: 10,
           step: 0.1,
         },
         bevelSegments: {
           name: "bevelSegments",
-          value: 3,
+          value: 1,
           min: 0,
           max: 30,
           step: 1,
@@ -87,7 +87,8 @@ export default {
     // 创建网格模型
     createMesh() {
       const textLoader = new THREE.FontLoader();
-      const url = "zcoolqingkehuangyouti_Regular.json";
+      const url = "static/zcoolqingkehuangyouti_Regular.json";
+      // const url = "/static/YaHei_Regular.js";
       // 导入字体
       textLoader.load(url, (font) => {
         const options = {
@@ -101,10 +102,10 @@ export default {
           curveSegments: this.properties.curveSegments.value,
         };
         // 创建文本几何体
-        const textGeo = new THREE.TextGeometry("中文文本测试", options);
+        const textGeo = new THREE.TextGeometry("@走嗲-微澜图书馆", options);
         // 创建材质
         const meshMaterial = new THREE.MeshStandardMaterial({
-          color: 0xeeffff,
+          color: 0xffff00,
         });
         // 创建文字网格对象
         this.mesh = new THREE.Mesh(textGeo, meshMaterial);
@@ -147,8 +148,8 @@ export default {
         alpha: true,
       });
       this.renderer.setSize(element.clientWidth, element.clientHeight); // 设置渲染区域尺寸
-      this.renderer.shadowMap.enabled = true; // 显示阴影
-      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // this.renderer.shadowMap.enabled = true; // 显示阴影
+      // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       this.renderer.setClearColor(0x3f3f3f, 1); // 设置背景颜色
       element.appendChild(this.renderer.domElement);
     },
@@ -175,17 +176,17 @@ export default {
   width: 100%;
   height: 100%;
 }
-.controls-box {
-  position: absolute;
-  right: 5px;
-  top: 5px;
-  width: 300px;
-  padding: 10px;
-  background-color: #fff;
-  border: 1px solid #c3c3c3;
-}
-.vertice-span {
-  line-height: 38px;
-  padding: 0 2px 0 10px;
-}
+/*.controls-box {*/
+/*  position: absolute;*/
+/*  right: 5px;*/
+/*  top: 5px;*/
+/*  width: 300px;*/
+/*  padding: 10px;*/
+/*  background-color: #fff;*/
+/*  border: 1px solid #c3c3c3;*/
+/*}*/
+/*.vertice-span {*/
+/*  line-height: 38px;*/
+/*  padding: 0 2px 0 10px;*/
+/*}*/
 </style>
