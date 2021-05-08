@@ -75,7 +75,6 @@ export default {
         const meshMaterial = new THREE.MeshStandardMaterial({
           color: 0x005691,
         })
-        const xMid = -0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x)
         // 创建文字网格对象
         this.mesh = new THREE.Mesh(textGeo, meshMaterial)
         // this.mesh.position.set(0, 0, 0);
@@ -119,7 +118,7 @@ export default {
       requestAnimationFrame(this.render)
       this.dirLight.position.copy(this.camera.position)
       this.pointLight.position.copy(this.camera.position)
-      // this.controls.update();
+      this.controls.update();
       this.renderer.render(this.scene, this.camera)
     },
 
@@ -129,6 +128,10 @@ export default {
       this.controls.enableZoom = true
       this.controls.minDistance = 100
       this.controls.maxDistance = 1200
+      this.controls.autoRotate = true;
+      this.controls.autoRotateSpeed = 1.0; // 30 seconds per round when fps is 60
+      this.controls.enableDamping = true;
+      this.controls.dampingFactor = 0.8;
     },
 
     //窗口变动触发的函数
