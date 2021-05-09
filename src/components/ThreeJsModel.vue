@@ -50,8 +50,9 @@ export default {
     // 创建场景
     createScene () {
       this.scene = new THREE.Scene()
+      // this.scene.background = new THREE.TextureLoader().load( "static/bg.jpeg" )
       this.scene.background = new THREE.Color(0x005691)
-      this.scene.fog = new THREE.Fog(0x000000, 250, 1400)
+      // this.scene.fog = new THREE.Fog(0xffffff)
     },
     // 创建网格模型
     createMesh () {
@@ -71,15 +72,13 @@ export default {
         }
         // 创建文本几何体
         const textGeo = new THREE.TextGeometry(this.text, options).center()
+
         // 创建材质
         const meshMaterial = new THREE.MeshStandardMaterial({
           color: 0x005691,
         })
         // 创建文字网格对象
         this.mesh = new THREE.Mesh(textGeo, meshMaterial)
-        // this.mesh.position.set(0, 0, 0);
-        this.mesh.rotation.y = 0.3
-        this.mesh.rotation.z = 0.0
         // 网格对象添加到场景中
         this.scene.add(this.mesh)
       })
@@ -87,7 +86,7 @@ export default {
 
     // 创建光源
     createLight () {
-      this.dirLight = new THREE.DirectionalLight(0xffffff, 0.725)
+      this.dirLight = new THREE.DirectionalLight(0xff0000, 0.725)
       this.dirLight.position.set(0, 0, 1).normalize()
       this.scene.add(this.dirLight)
 
@@ -99,7 +98,7 @@ export default {
     createCamera () {
       const k = this.width / this.height // 窗口宽高比
       this.camera = new THREE.PerspectiveCamera(30, k, 1, 1500)
-      this.camera.position.set(0, 400, 700)
+      this.camera.position.set(0, 300, 700)
       this.camera.lookAt(new THREE.Vector3(0, 0, 0)) // 设置相机方向
       this.scene.add(this.camera)
     },
@@ -127,7 +126,7 @@ export default {
       this.controls = new OrbitControls(this.camera, this.renderer.domElement)
       this.controls.enableZoom = true
       this.controls.minDistance = 100
-      this.controls.maxDistance = 1200
+      this.controls.maxDistance = 800
       this.controls.autoRotate = true;
       this.controls.autoRotateSpeed = 1.0; // 30 seconds per round when fps is 60
       this.controls.enableDamping = true;

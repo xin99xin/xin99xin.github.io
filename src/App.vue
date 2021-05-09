@@ -1,18 +1,29 @@
 <template>
   <div>
-    <Hello class="hello"/>
-    <Form class="form"/>
-    <ThreeJsModel class="model"/>
+<!--    <Hello class="hello"/>-->
+<!--    <Form class="form"/>-->
+<!--    <-->
+<!--&lt;!&ndash;    <ThreeJsModel />&ndash;&gt;-->
+
+<!--    <Base />-->
+    <router-view/>
   </div>
 </template>
 
 <script>
-import ThreeJsModel from './components/ThreeJsModel'
-import Hello from './components/Hello'
-import Form from './components/Form'
+// import ThreeJsModel from './components/ThreeJsModel'
+
+// import Hello from './components/Hello'
+// import Form from './components/Form'
+// import Base from './components/ThreeJsObj'
 export default {
-  name: 'App',
-  components: {ThreeJsModel, Hello, Form}
+  name: 'App'
+  // components: {
+  //   // ThreeJsModel,
+  //   Hello,
+  //   Form,
+  //   Base
+  // }
 }
 </script>
 <style>
