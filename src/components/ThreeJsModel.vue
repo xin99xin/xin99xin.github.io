@@ -2,7 +2,6 @@
   <div id="container"></div>
 </template>
 <script>
-/* eslint-disable */
 import * as THREE from 'three'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 
@@ -15,7 +14,7 @@ export default {
         bevelThickness: 2,
         bevelSize: 1.5,
         curveSegments: 4,
-        bevelEnabled: true,
+        bevelEnabled: true
       },
       mesh: null,
       camera: null,
@@ -27,12 +26,12 @@ export default {
       pointLight: null,
 
       Width: null,
-      height: null,
+      height: null
     }
   },
   mounted () {
-    this.width = document.getElementById('container').clientWidth;
-    this.height = document.getElementById('container').clientHeight;
+    this.width = document.getElementById('container').clientWidth
+    this.height = document.getElementById('container').clientHeight
     this.init()
   },
   methods: {
@@ -68,14 +67,14 @@ export default {
           bevelThickness: this.textProperties.bevelThickness,
           bevelSize: this.textProperties.bevelSize,
           bevelEnabled: this.textProperties.bevelEnabled,
-          curveSegments: this.textProperties.curveSegments,
+          curveSegments: this.textProperties.curveSegments
         }
         // 创建文本几何体
         const textGeo = new THREE.TextGeometry(this.text, options).center()
 
         // 创建材质
         const meshMaterial = new THREE.MeshStandardMaterial({
-          color: 0x005691,
+          color: 0x005691
         })
         // 创建文字网格对象
         this.mesh = new THREE.Mesh(textGeo, meshMaterial)
@@ -104,10 +103,9 @@ export default {
     },
     // 创建渲染器
     createRender () {
-
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,
-        alpha: true,
+        alpha: true
       })
       this.renderer.setSize(this.width, this.height) // 设置渲染区域尺寸
       document.getElementById('container').appendChild(this.renderer.domElement)
@@ -117,7 +115,7 @@ export default {
       requestAnimationFrame(this.render)
       this.dirLight.position.copy(this.camera.position)
       this.pointLight.position.copy(this.camera.position)
-      this.controls.update();
+      this.controls.update()
       this.renderer.render(this.scene, this.camera)
     },
 
@@ -127,22 +125,22 @@ export default {
       this.controls.enableZoom = true
       this.controls.minDistance = 100
       this.controls.maxDistance = 800
-      this.controls.autoRotate = true;
-      this.controls.autoRotateSpeed = 1.0; // 30 seconds per round when fps is 60
-      this.controls.enableDamping = true;
-      this.controls.dampingFactor = 0.8;
+      this.controls.autoRotate = true
+      this.controls.autoRotateSpeed = 1.0 // 30 seconds per round when fps is 60
+      this.controls.enableDamping = true
+      this.controls.dampingFactor = 0.8
     },
 
-    //窗口变动触发的函数
+    // 窗口变动触发的函数
     onWindowResize () {
-      this.width = document.getElementById('container').clientWidth;
-      this.height = document.getElementById('container').clientHeight;
-      this.renderer.setSize(this.width,this.height);
-      this.camera.aspect = this.width / this.height;
+      this.width = document.getElementById('container').clientWidth
+      this.height = document.getElementById('container').clientHeight
+      this.renderer.setSize(this.width, this.height)
+      this.camera.aspect = this.width / this.height
       this.camera.updateProjectionMatrix()
-      this.renderer.render(this.scene, this.camera);
+      this.renderer.render(this.scene, this.camera)
     }
-  },
+  }
 }
 </script>
 <style>
