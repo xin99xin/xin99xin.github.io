@@ -25,8 +25,7 @@ export default {
 
       //模型相关
       cellGroup: null,
-      baseMesh: null,
-      rootGroup: new THREE.Group(),
+      baseGroup: null,
       camera: null,
       scene: null,
       renderer: null,
@@ -56,6 +55,8 @@ export default {
     this.height = document.getElementById('container').clientHeight;
     this.cellGroup = new THREE.Group();
     this.cellGroup.position.set(0,0,0);
+    this.baseGroup = new THREE.Group();
+    this.baseGroup.position.set(0,0,0);
     this.init()
   },
 
@@ -80,13 +81,9 @@ export default {
       for (var index = 0 ; index<=this.weeks;index++){
         this.reData[index] = {"weekNum": index+1,"hours": Math.round(Math.random()*30)};
       }
+      console.log(this.reData);
 
       //TODO ajax
-    },
-
-    //提交动作
-    onButtonClick(){
-
     },
 
     //创建柱状体
@@ -114,10 +111,18 @@ export default {
       this.scene = new THREE.Scene({
         background: new THREE.Color(0x005691)
       }).add(new THREE.AxisHelper());
-      this.scene.add(this.cellGroup);
+      this.scene.add(this.cellGroup).add(this.baseGroup);
     },
     loadMesh(){
-
+      new OBJLoader().load('static/shapr3d_export_2021-05-09_12h29m.obj', (obj) => {
+        var mesh = obj.children[0]
+        mesh.geometry.center()
+        mesh.scale.set(1000, 1000, 1000)
+        mesh.material = new THREE.MeshBasicMaterial({
+          color: 0xffff00,
+        })
+        this.baseGroup.add(mesh)
+      })
     },
 
     // 创建光源
