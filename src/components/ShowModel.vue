@@ -120,8 +120,6 @@ export default {
         mesh.position.set(pX, pY, row.hours * 0.7)
         this.cellGroup.add(mesh)
       }
-      var center = new THREE.Box3().expandByObject(this.cellGroup).getCenter()
-      this.cellGroup.position.set(-center.x, -center.y, center.z)
       this.scene.add(this.cellGroup)
     },
 
@@ -135,8 +133,13 @@ export default {
           wireframe: true
         })
         this.baseGroup.add(mesh)
+        this.createModelColumns()
+        var size = new THREE.Box3().expandByObject(this.baseGroup).getSize()
+        var center = new THREE.Box3().expandByObject(this.cellGroup).getCenter()
+        this.cellGroup.position = new THREE.Vector3(-center.x, -center.y, size.z / 2)
       })
       this.scene.add(this.baseGroup)
+      this.rootGroup.rotateX(3.14 / 180 * 90)
     },
 
     // 创建光源
