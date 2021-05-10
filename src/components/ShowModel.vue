@@ -23,15 +23,31 @@ export default {
       gender: null,
 
       // 模型相关
-      cellGroup: null,
-      baseGroup: null,
+      modelUrl: 'static/shapr3d_export_2021-05-09_12h29m.obj',
+      cellGroup: new THREE.Group(),
+      rootGroup: new THREE.Group(),
       camera: null,
-      scene: null,
-      renderer: null,
+      scene: new THREE.Scene().add(new THREE.AxesHelper()),
+      renderer: new THREE.WebGLRenderer(),
       controls: null,
-      text: '微澜图书馆',
-      dirLight: null,
-      pointLight: null,
+      colors: {
+        A: {
+          M: 0x0969a2,
+          R: 0xFF8C00
+        },
+        B: {
+          M: 0x245A7A,
+          R: 0xBF7F30
+        },
+        C: {
+          M: 0x03436A,
+          R: 0xA65B00
+        },
+        D: {
+          M: 0x64A8D1,
+          R: 0xFFC073
+        }
+      },
 
       Width: null,
       height: null,
@@ -41,57 +57,51 @@ export default {
         maxX: 11, // 最大列数
         maxY: 5, // 最大行数
         sideLength: 15, // 单元格边长
-        padding: 1, // 边缘填充
-        material: new THREE.MeshStandardMaterial({
-          color: 0x005691
-        })
+        padding: 1 // 边缘填充
       }
-
     }
   },
   mounted () {
     this.width = document.getElementById('container').clientWidth
     this.height = document.getElementById('container').clientHeight
-    this.cellGroup = new THREE.Group()
-    this.cellGroup.position.set(0, 0, 0)
-    this.baseGroup = new THREE.Group()
-    this.baseGroup.position.set(0, 0, 0)
-    this.init()
+    this.scene = new THREE.Scene().add(this.rootGroup)
+    this.getReData()
+    this.createColumns()
+    this.loadBase() // 载入底座模型
+    this.createLight() // 创建光源
+    this.createCamera() // 创建相机
+    this.renderer.setSize(this.width, this.height) // 设置渲染区域尺寸
+    document.getElementById('container').appendChild(this.renderer.domElement)
+    this.createControls() // 创建控件对象
+    this.render() // 渲染
+    window.onresize = this.onWindowResize
   },
 
   methods: {
-    // 初始化模型
-    init () {
-      this.getReData()
-      this.createScene() // 创建场景
-      this.createModelColumns()
-      this.loadMesh() // 载入底座模型
-      this.createLight() // 创建光源
-      this.createCamera() // 创建相机
-      this.createRender() // 创建渲染器
-      this.createControls() // 创建控件对象
-      this.render() // 渲染
-      window.onresize = this.onWindowResize
-    },
-
     // 获取数据库查询结果
     getReData () {
       // 生成测试数据
       for (var index = 0; index <= this.weeks; index++) {
         this.reData[index] = {'weekNum': index + 1, 'hours': Math.round(Math.random() * 30)}
       }
-      console.log(this.reData)
 
       // TODO ajax
     },
 
     // 创建柱状体
-    createModelColumns () {
+    createColumns () {
       var boxSize = this.cell.sideLength - this.cell.padding * 2
       var geometry = new THREE.BoxGeometry(boxSize, boxSize, 1)
+      var group = new THREE.Group()
       var x, y // 当前单元格坐标
       for (var row of this.reData) {
-        var mesh = new THREE.Mesh(geometry, this.cell.material)
+        var mesh = new THREE.Mesh(
+          geometry,
+          new THREE.MeshBasicMaterial({
+            color: this.colors.A.M,
+            wireframe: true
+          })
+        )
         mesh.scale.set(1, 1, row.hours * 1.4)// 加高一些
 
         // 根据weekNum计算当前的单元格坐标
@@ -102,61 +112,46 @@ export default {
 
         // 由于高度有拉伸，需要调整z轴坐标
         mesh.position.set(pX, pY, row.hours * 0.7)
-        this.cellGroup.add(mesh)
+        group.add(mesh)
       }
+      this.rootGroup.add(group)
+      var center = new THREE.Box3().expandByObject(group).getCenter()
+      group.position.set(-center.x, -center.y)
+      this.cellGroup.add(group)
+      this.rootGroup.add(this.cellGroup)
     },
 
-    createScene () {
-      this.scene = new THREE.Scene({
-        background: new THREE.Color(0x005691)
-      }).add(new THREE.AxisHelper())
-      this.scene.add(this.cellGroup).add(this.baseGroup)
-    },
-    loadMesh () {
-      new OBJLoader().load('static/shapr3d_export_2021-05-09_12h29m.obj', (obj) => {
+    loadBase () {
+      new OBJLoader().load(this.modelUrl, (obj) => {
         var mesh = obj.children[0]
         mesh.geometry.center()
         mesh.scale.set(1000, 1000, 1000)
         mesh.material = new THREE.MeshBasicMaterial({
-          color: 0xffff00
-        })
-        this.baseGroup.add(mesh)
+          color: this.colors.A.M,
+          wireframe: true})
+        this.rootGroup.add(mesh)
+        this.createColumns()
+
+        let size = new THREE.Box3().expandByObject(mesh).getSize()
+        this.cellGroup.position.z = size.z / 2
       })
     },
 
-    // 创建光源
     createLight () {
-      this.dirLight = new THREE.DirectionalLight(0xff0000, 0.725)
-      this.dirLight.position.set(0, 0, 1).normalize()
-      this.scene.add(this.dirLight)
-
-      this.pointLight = new THREE.PointLight(0xffffff, 1.5)
-      this.pointLight.position.set(0, 100, 90)
-      this.scene.add(this.pointLight)
     },
+
     // 创建相机
     createCamera () {
       const k = this.width / this.height // 窗口宽高比
       this.camera = new THREE.PerspectiveCamera(30, k, 1, 1500)
-      this.camera.position.set(0, 300, 700)
+      this.camera.position.set(0, -700, 200)
       this.camera.lookAt(new THREE.Vector3(0, 0, 0)) // 设置相机方向
       this.scene.add(this.camera)
-    },
-    // 创建渲染器
-    createRender () {
-      this.renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true
-      })
-      this.renderer.setSize(this.width, this.height) // 设置渲染区域尺寸
-      document.getElementById('container').appendChild(this.renderer.domElement)
     },
 
     render () {
       requestAnimationFrame(this.render)
-      this.dirLight.position.copy(this.camera.position)
-      this.pointLight.position.copy(this.camera.position)
-      this.controls.update()
+      // this.controls.update()
       this.renderer.render(this.scene, this.camera)
     },
 
@@ -166,8 +161,6 @@ export default {
       this.controls.enableZoom = true
       this.controls.minDistance = 100
       this.controls.maxDistance = 800
-      this.controls.autoRotate = true
-      this.controls.autoRotateSpeed = 1.0 // 30 seconds per round when fps is 60
       this.controls.enableDamping = true
       this.controls.dampingFactor = 0.8
     },
