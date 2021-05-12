@@ -19,10 +19,11 @@ export default {
       userId: null,
       userName: null,
       year: null,
-      weeks: 52,
+      weeks: null,
       gender: null,
 
       // 模型相关
+      axesHelper: new THREE.AxesHelper(100),
       modelUrl: 'static/shapr3d_export_2021-05-09_12h29m.obj',
       rootGroup: new THREE.Group(),
       lights: {
@@ -65,17 +66,17 @@ export default {
     }
   },
   mounted () {
+    this.getReData()
     this.width = document.getElementById('container').clientWidth
     this.height = document.getElementById('container').clientHeight
-    this.cellGroup = new THREE.Group()
-    this.baseGroup = new THREE.Group()
+    this.cellGroup = new THREE.Group().add(this.createModelColumns()).rotateX(-90 * (Math.PI / 180))
+    this.baseGroup = new THREE.Group().rotateX(-90 * (Math.PI / 180))
     this.rootGroup.add(this.cellGroup, this.baseGroup)
     this.scene = new THREE.Scene()
-      .add(new THREE.AxisHelper())
+      .add(this.axesHelper)
       .add(this.rootGroup)
       .add(this.lights.dirLight, this.lights.pointLight)
-    this.getReData()
-    this.createModelColumns()
+    // this.createModelColumns()
     this.loadMesh() // 载入底座模型
     this.createLight() // 创建光源
     this.createCamera() // 创建相机
@@ -87,7 +88,7 @@ export default {
 
   methods: {
     // 获取数据库查询结果
-    getReData () {
+    getReData (year, weeks) {
       // 生成测试数据
       for (var index = 0; index <= this.weeks; index++) {
         this.reData[index] = {'weekNum': index + 1, 'hours': Math.round(Math.random() * 30)}
@@ -105,6 +106,7 @@ export default {
         color: this.colors.B.M,
         wireframe: true
       })
+      var group = new THREE.Group()
       var x, y // 当前单元格坐标
       for (var row of this.reData) {
         var mesh = new THREE.Mesh(geometry, material)
@@ -118,9 +120,13 @@ export default {
 
         // 由于高度有拉伸，需要调整z轴坐标
         mesh.position.set(pX, pY, row.hours * 0.7)
-        this.cellGroup.add(mesh)
+        group.add(mesh)
       }
-      this.scene.add(this.cellGroup)
+      // var center = new THREE.Box3(this.cellGroup).getCenter()
+      // this.cellGroup.translateOnAxis(center.x, center.y, center.z)
+      // console.log(center)
+      return group
+      // this.scene.add(this.cellGroup)
     },
 
     loadMesh () {
@@ -133,13 +139,14 @@ export default {
           wireframe: true
         })
         this.baseGroup.add(mesh)
-        this.createModelColumns()
+        this.cellGroup.add(this.createModelColumns())
         var size = new THREE.Box3().expandByObject(this.baseGroup).getSize()
+        console.log(size)
         var center = new THREE.Box3().expandByObject(this.cellGroup).getCenter()
-        this.cellGroup.position = new THREE.Vector3(-center.x, -center.y, size.z / 2)
+        console.log(center)
+        // this.cellGroup.position = new THREE.Vector3(0, 0, center.z/2)
       })
       this.scene.add(this.baseGroup)
-      this.rootGroup.rotateX(3.14 / 180 * 90)
     },
 
     // 创建光源
@@ -155,7 +162,7 @@ export default {
     createCamera () {
       const k = this.width / this.height // 窗口宽高比
       this.camera = new THREE.PerspectiveCamera(30, k, 1, 1500)
-      this.camera.position.set(0, 300, 700)
+      this.camera.position.set(0, 0, 700)
       this.camera.lookAt(new THREE.Vector3(0, 0, 0)) // 设置相机方向
       this.scene.add(this.camera)
     },
@@ -178,8 +185,6 @@ export default {
       this.controls.enableZoom = true
       this.controls.minDistance = 100
       this.controls.maxDistance = 800
-      this.controls.autoRotate = true
-      this.controls.autoRotateSpeed = 1.0 // 30 seconds per round when fps is 60
       this.controls.enableDamping = true
       this.controls.dampingFactor = 0.8
     },
