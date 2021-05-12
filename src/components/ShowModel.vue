@@ -14,22 +14,21 @@ export default {
   name: 'ShowModel',
   data () {
     return {
-      reData: new Array(this.weeks),
-      fileName: null,
-      userId: null,
-      userName: null,
-      year: null,
-      weeks: 52,
-      gender: null,
+      // 用户信息
+      userinfo: {
+        userId: 0,
+        userName: '',
+        year: '',
+        gender: ''
+      },
 
       // 模型相关
       modelUrl: 'static/shapr3d_export_2021-05-09_12h29m.obj',
-      cellGroup: new THREE.Group(),
+      reData: [],
       rootGroup: new THREE.Group(),
       camera: null,
       scene: new THREE.Scene().add(new THREE.AxesHelper()),
       renderer: new THREE.WebGLRenderer(),
-      controls: null,
       colors: {
         A: {
           M: 0x0969a2,
@@ -48,17 +47,17 @@ export default {
           R: 0xFFC073
         }
       },
-
-      Width: null,
-      height: null,
-
-      // 单元格属性
       cell: {
         maxX: 11, // 最大列数
         maxY: 5, // 最大行数
         sideLength: 15, // 单元格边长
         padding: 1 // 边缘填充
-      }
+      },
+      STLFileName: '',
+
+      // 页面
+      Width: null,
+      height: null
     }
   },
   mounted () {
@@ -66,8 +65,8 @@ export default {
     this.height = document.getElementById('container').clientHeight
     this.scene = new THREE.Scene().add(this.rootGroup)
     this.getReData()
-    this.createColumns()
-    this.loadBase() // 载入底座模型
+    this.rootGroup.add(this.createColumns(this.reData))
+    this.loadBase(this.modelUrl, 1000)
     this.createLight() // 创建光源
     this.createCamera() // 创建相机
     this.renderer.setSize(this.width, this.height) // 设置渲染区域尺寸
@@ -81,7 +80,7 @@ export default {
     // 获取数据库查询结果
     getReData () {
       // 生成测试数据
-      for (var index = 0; index <= this.weeks; index++) {
+      for (let index = 0; index <= 51; index++) {
         this.reData[index] = {'weekNum': index + 1, 'hours': Math.round(Math.random() * 30)}
       }
 
@@ -89,13 +88,13 @@ export default {
     },
 
     // 创建柱状体
-    createColumns () {
-      var boxSize = this.cell.sideLength - this.cell.padding * 2
-      var geometry = new THREE.BoxGeometry(boxSize, boxSize, 1)
-      var group = new THREE.Group()
-      var x, y // 当前单元格坐标
-      for (var row of this.reData) {
-        var mesh = new THREE.Mesh(
+    createColumns (data) {
+      const boxSize = this.cell.sideLength - this.cell.padding * 2
+      const geometry = new THREE.BoxGeometry(boxSize, boxSize, 1)
+      const group = new THREE.Group()
+      let x, y // 当前单元格坐标
+      for (const row of data) {
+        const mesh = new THREE.Mesh(
           geometry,
           new THREE.MeshBasicMaterial({
             color: this.colors.A.M,
@@ -107,33 +106,24 @@ export default {
         // 根据weekNum计算当前的单元格坐标
         x = Math.floor((row.weekNum - 1) / this.cell.maxY)// 星期序号除最大行数向下取整
         y = (row.weekNum - 1 + this.cell.maxY) % this.cell.maxY// 取模
-        var pX = x * this.cell.sideLength + this.cell.padding
-        var pY = y * this.cell.sideLength + this.cell.padding
+        const pX = x * this.cell.sideLength + this.cell.padding
+        const pY = y * this.cell.sideLength + this.cell.padding
 
         // 由于高度有拉伸，需要调整z轴坐标
         mesh.position.set(pX, pY, row.hours * 0.7)
         group.add(mesh)
       }
-      this.rootGroup.add(group)
-      var center = new THREE.Box3().expandByObject(group).getCenter()
-      group.position.set(-center.x, -center.y)
-      this.cellGroup.add(group)
-      this.rootGroup.add(this.cellGroup)
+      return group
     },
 
-    loadBase () {
-      new OBJLoader().load(this.modelUrl, (obj) => {
-        var mesh = obj.children[0]
-        mesh.geometry.center()
-        mesh.scale.set(1000, 1000, 1000)
-        mesh.material = new THREE.MeshBasicMaterial({
+    loadBase (url, scale) {
+      new OBJLoader().load(url, (obj) => {
+        obj.scale.set(scale, scale, scale)
+        obj.children[0].material = new THREE.MeshBasicMaterial({
           color: this.colors.A.M,
-          wireframe: true})
-        this.rootGroup.add(mesh)
-        this.createColumns()
-
-        let size = new THREE.Box3().expandByObject(mesh).getSize()
-        this.cellGroup.position.z = size.z / 2
+          wireframe: true}
+        )
+        this.rootGroup.add(obj)
       })
     },
 
@@ -143,9 +133,8 @@ export default {
     // 创建相机
     createCamera () {
       const k = this.width / this.height // 窗口宽高比
-      this.camera = new THREE.PerspectiveCamera(30, k, 1, 1500)
-      this.camera.position.set(0, -700, 200)
-      this.camera.lookAt(new THREE.Vector3(0, 0, 0)) // 设置相机方向
+      this.camera = new THREE.PerspectiveCamera(30, k, 1, 2500)
+      this.camera.position.set(0, 0, 700)
       this.scene.add(this.camera)
     },
 
@@ -157,12 +146,12 @@ export default {
 
     // 创建控件对象
     createControls () {
-      this.controls = new OrbitControls(this.camera, this.renderer.domElement)
-      this.controls.enableZoom = true
-      this.controls.minDistance = 100
-      this.controls.maxDistance = 800
-      this.controls.enableDamping = true
-      this.controls.dampingFactor = 0.8
+      const controls = new OrbitControls(this.camera, this.renderer.domElement)
+      controls.enableZoom = true
+      controls.minDistance = 100
+      controls.maxDistance = 2000
+      controls.enableDamping = true
+      controls.dampingFactor = 0.8
     },
 
     // 窗口变动触发的函数
