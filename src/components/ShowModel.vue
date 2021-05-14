@@ -5,6 +5,7 @@
 <script>
 import * as THREE from 'three'
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js'
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 // import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 // import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 // import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -79,6 +80,7 @@ export default {
     this.container.appendChild(this.renderer.domElement)
     this.container.style.touchAction = 'none'
     this.container.addEventListener('pointerdown', this.onPointerDown)
+    this.createControls()
     this.render() // 渲染
     window.onresize = this.onWindowResize
   },
@@ -163,6 +165,16 @@ export default {
       this.rootGroup.rotation.z += (this.targetRotation - this.rootGroup.rotation.z) * 0.05
       this.renderer.clear()
       this.renderer.render(this.scene, this.camera)
+    },
+
+    // 创建控件对象
+    createControls () {
+      const controls = new OrbitControls(this.camera, this.renderer.domElement)
+      controls.enableZoom = true
+      controls.minDistance = 100
+      controls.maxDistance = 2000
+      controls.enableDamping = true
+      controls.dampingFactor = 0.8
     },
 
     // 窗口变动触发的函数
