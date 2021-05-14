@@ -14,26 +14,21 @@ export default {
   name: 'ShowModel',
   data () {
     return {
-      reData: new Array(this.weeks),
-      fileName: null,
-      userId: null,
-      userName: null,
-      year: null,
-      weeks: null,
-      gender: null,
+      // 用户信息
+      userinfo: {
+        userId: 0,
+        userName: '',
+        year: '',
+        gender: ''
+      },
 
       // 模型相关
-      axesHelper: new THREE.AxesHelper(100),
       modelUrl: 'static/shapr3d_export_2021-05-09_12h29m.obj',
+      reData: [],
       rootGroup: new THREE.Group(),
-      lights: {
-        dirLight: new THREE.Light(),
-        pointLight: new THREE.Light()
-      },
       camera: null,
-      scene: null,
-      renderer: null,
-      controls: null,
+      scene: new THREE.Scene().add(new THREE.AxesHelper()),
+      renderer: new THREE.WebGLRenderer(),
       colors: {
         A: {
           M: 0x0969a2,
@@ -52,35 +47,30 @@ export default {
           R: 0xFFC073
         }
       },
-
-      Width: null,
-      height: null,
-
-      // 单元格属性
       cell: {
         maxX: 11, // 最大列数
         maxY: 5, // 最大行数
         sideLength: 15, // 单元格边长
         padding: 1 // 边缘填充
-      }
+      },
+      STLFileName: '',
+
+      // 页面
+      Width: null,
+      height: null
     }
   },
   mounted () {
-    this.getReData()
     this.width = document.getElementById('container').clientWidth
     this.height = document.getElementById('container').clientHeight
-    this.cellGroup = new THREE.Group().add(this.createModelColumns()).rotateX(-90 * (Math.PI / 180))
-    this.baseGroup = new THREE.Group().rotateX(-90 * (Math.PI / 180))
-    this.rootGroup.add(this.cellGroup, this.baseGroup)
-    this.scene = new THREE.Scene()
-      .add(this.axesHelper)
-      .add(this.rootGroup)
-      .add(this.lights.dirLight, this.lights.pointLight)
-    // this.createModelColumns()
-    this.loadMesh() // 载入底座模型
+    this.scene = new THREE.Scene().add(this.rootGroup)
+    this.getReData()
+    this.createColumns(this.reData)
+    this.loadBase(this.modelUrl, 1000)
     this.createLight() // 创建光源
     this.createCamera() // 创建相机
-    this.createRender() // 创建渲染器
+    this.renderer.setSize(this.width, this.height) // 设置渲染区域尺寸
+    document.getElementById('container').appendChild(this.renderer.domElement)
     this.createControls() // 创建控件对象
     this.render() // 渲染
     window.onresize = this.onWindowResize
@@ -88,105 +78,92 @@ export default {
 
   methods: {
     // 获取数据库查询结果
-    getReData (year, weeks) {
+    getReData () {
       // 生成测试数据
-      for (var index = 0; index <= this.weeks; index++) {
+      for (let index = 0; index <= 51; index++) {
         this.reData[index] = {'weekNum': index + 1, 'hours': Math.round(Math.random() * 30)}
       }
-      console.log(this.reData)
 
       // TODO ajax
     },
 
     // 创建柱状体
-    createModelColumns () {
-      var boxSize = this.cell.sideLength - this.cell.padding * 2
-      var geometry = new THREE.BoxGeometry(boxSize, boxSize, 1)
-      var material = new THREE.MeshBasicMaterial({
-        color: this.colors.B.M,
-        wireframe: true
-      })
-      var group = new THREE.Group()
-      var x, y // 当前单元格坐标
-      for (var row of this.reData) {
-        var mesh = new THREE.Mesh(geometry, material)
+    createColumns (data) {
+      const boxSize = this.cell.sideLength - this.cell.padding * 2
+      const geometry = new THREE.BoxGeometry(boxSize, boxSize, 1)
+      const group = new THREE.Group()
+      let x, y // 当前单元格坐标
+      for (const row of data) {
+        const mesh = new THREE.Mesh(
+          geometry,
+          new THREE.MeshBasicMaterial({
+            color: this.colors.A.M,
+            wireframe: true
+          })
+        )
         mesh.scale.set(1, 1, row.hours * 1.4)// 加高一些
 
         // 根据weekNum计算当前的单元格坐标
         x = Math.floor((row.weekNum - 1) / this.cell.maxY)// 星期序号除最大行数向下取整
         y = (row.weekNum - 1 + this.cell.maxY) % this.cell.maxY// 取模
-        var pX = x * this.cell.sideLength + this.cell.padding
-        var pY = y * this.cell.sideLength + this.cell.padding
+        const pX = x * this.cell.sideLength + this.cell.padding
+        const pY = y * this.cell.sideLength + this.cell.padding
 
         // 由于高度有拉伸，需要调整z轴坐标
         mesh.position.set(pX, pY, row.hours * 0.7)
+        mesh.name = row.weekNum + ':' + row.hours
         group.add(mesh)
       }
-      // var center = new THREE.Box3(this.cellGroup).getCenter()
-      // this.cellGroup.translateOnAxis(center.x, center.y, center.z)
-      // console.log(center)
-      return group
-      // this.scene.add(this.cellGroup)
+      group.name = 'columns'
+      this.setCenter(group)
+      // group.position.set(-center.x, -center.y, -center.z)
+      this.rootGroup.add(group)
     },
 
-    loadMesh () {
-      new OBJLoader().load(this.modelUrl, (obj) => {
-        var mesh = obj.children[0]
-        mesh.geometry.center()
-        mesh.scale.set(1000, 1000, 1000)
-        mesh.material = new THREE.MeshBasicMaterial({
-          color: this.colors.D.R,
-          wireframe: true
-        })
-        this.baseGroup.add(mesh)
-        this.cellGroup.add(this.createModelColumns())
-        var size = new THREE.Box3().expandByObject(this.baseGroup).getSize()
-        console.log(size)
-        var center = new THREE.Box3().expandByObject(this.cellGroup).getCenter()
-        console.log(center)
-        // this.cellGroup.position = new THREE.Vector3(0, 0, center.z/2)
+    loadBase (url, scale) {
+      new OBJLoader().load(url, (obj) => {
+        obj.scale.set(scale, scale, scale)
+        obj.children[0].material = new THREE.MeshBasicMaterial({
+          color: this.colors.A.M,
+          wireframe: true}
+        )
+        obj.name = 'base'
+        this.setCenter(obj)
+        this.rootGroup.add(obj)
+        // 根据base和columns的size调整columns的z轴位置
+        const objSize = this.getSize(obj)
+        const columns = this.rootGroup.getObjectByName('columns')
+        const columnsSize = this.getSize(columns)
+        columns.translateZ((objSize.z + columnsSize.z) / 2)
+        this.rootGroup.lookAt(0, 1, 0)
       })
-      this.scene.add(this.baseGroup)
     },
 
-    // 创建光源
     createLight () {
-      this.dirLight = new THREE.DirectionalLight(0xff0000, 0.725)
-      this.dirLight.position.set(0, 0, 1).normalize()
-      this.scene.add(this.dirLight)
-      this.pointLight = new THREE.PointLight(0xffffff, 1.5)
-      this.pointLight.position.set(0, 100, 90)
-      this.scene.add(this.pointLight)
     },
+
     // 创建相机
     createCamera () {
       const k = this.width / this.height // 窗口宽高比
-      this.camera = new THREE.PerspectiveCamera(30, k, 1, 1500)
+      this.camera = new THREE.PerspectiveCamera(30, k, 1, 2500)
       this.camera.position.set(0, 0, 700)
-      this.camera.lookAt(new THREE.Vector3(0, 0, 0)) // 设置相机方向
       this.scene.add(this.camera)
-    },
-    // 创建渲染器
-    createRender () {
-      this.renderer = new THREE.WebGLRenderer()
-      this.renderer.setSize(this.width, this.height) // 设置渲染区域尺寸
-      document.getElementById('container').appendChild(this.renderer.domElement)
     },
 
     render () {
       requestAnimationFrame(this.render)
-      this.controls.update()
+      // this.controls.update()
       this.renderer.render(this.scene, this.camera)
     },
 
     // 创建控件对象
     createControls () {
-      this.controls = new OrbitControls(this.camera, this.renderer.domElement)
-      this.controls.enableZoom = true
-      this.controls.minDistance = 100
-      this.controls.maxDistance = 800
-      this.controls.enableDamping = true
-      this.controls.dampingFactor = 0.8
+      const controls = new OrbitControls(this.camera, this.renderer.domElement)
+      controls.enableZoom = true
+      controls.minDistance = 100
+      controls.maxDistance = 2000
+      controls.enableDamping = true
+      controls.dampingFactor = 0.8
     },
 
     // 窗口变动触发的函数
@@ -197,6 +174,17 @@ export default {
       this.camera.aspect = this.width / this.height
       this.camera.updateProjectionMatrix()
       this.renderer.render(this.scene, this.camera)
+    },
+    // 获取物体位置和尺寸
+    setCenter (obj) {
+      const center = new THREE.Vector3()
+      new THREE.Box3().expandByObject(obj).getCenter(center)
+      obj.position.set(-center.x, -center.y, -center.z)
+    },
+    getSize (obj) {
+      const size = new THREE.Vector3()
+      new THREE.Box3().expandByObject(obj).getSize(size)
+      return size
     }
 
   }
