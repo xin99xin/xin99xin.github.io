@@ -4,7 +4,6 @@
 
 <script>
 import * as THREE from 'three'
-import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js'
 // import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 // import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -27,7 +26,7 @@ export default {
       reData: [],
       rootGroup: new THREE.Group(),
       camera: null,
-      scene: new THREE.Scene().add(new THREE.AxesHelper()),
+      scene: new THREE.Scene(),
       renderer: new THREE.WebGLRenderer(),
       colors: {
         A: {
@@ -55,9 +54,14 @@ export default {
       },
       STLFileName: '',
 
-      // 页面
+      // 页面、容器、目标旋转、鼠标位置等
       Width: null,
-      height: null
+      height: null,
+      container: null,
+      targetRotation: 0,
+      targetRotationOnPointerDown: 0,
+      pointerX: 0,
+      pointerXOnPointerDown: 0
     }
   },
   mounted () {
@@ -71,7 +75,10 @@ export default {
     this.createCamera() // 创建相机
     this.renderer.setSize(this.width, this.height) // 设置渲染区域尺寸
     document.getElementById('container').appendChild(this.renderer.domElement)
-    this.createControls() // 创建控件对象
+    this.container = document.getElementById('container')
+    this.container.appendChild(this.renderer.domElement)
+    this.container.style.touchAction = 'none'
+    this.container.addEventListener('pointerdown', this.onPointerDown)
     this.render() // 渲染
     window.onresize = this.onWindowResize
   },
@@ -146,24 +153,16 @@ export default {
     createCamera () {
       const k = this.width / this.height // 窗口宽高比
       this.camera = new THREE.PerspectiveCamera(30, k, 1, 2500)
-      this.camera.position.set(0, 0, 700)
+      this.camera.position.set(0, 300, 700)
+      this.camera.lookAt(this.rootGroup.position) // 没有controls的情况必须设置，血的教训
       this.scene.add(this.camera)
     },
 
     render () {
       requestAnimationFrame(this.render)
-      // this.controls.update()
+      this.rootGroup.rotation.z += (this.targetRotation - this.rootGroup.rotation.z) * 0.05
+      this.renderer.clear()
       this.renderer.render(this.scene, this.camera)
-    },
-
-    // 创建控件对象
-    createControls () {
-      const controls = new OrbitControls(this.camera, this.renderer.domElement)
-      controls.enableZoom = true
-      controls.minDistance = 100
-      controls.maxDistance = 2000
-      controls.enableDamping = true
-      controls.dampingFactor = 0.8
     },
 
     // 窗口变动触发的函数
@@ -185,8 +184,28 @@ export default {
       const size = new THREE.Vector3()
       new THREE.Box3().expandByObject(obj).getSize(size)
       return size
-    }
+    },
 
+    // 控制旋转（鼠标按下、移动、抬起）
+    onPointerDown (event) {
+      if (event.isPrimary === false) return
+      this.pointerXOnPointerDown = event.clientX - this.width / 2
+      this.targetRotationOnPointerDown = this.targetRotation
+      document.addEventListener('pointermove', this.onPointerMove)
+      document.addEventListener('pointerup', this.onPointerUp)
+    },
+
+    onPointerMove (event) {
+      if (event.isPrimary === false) return
+      this.pointerX = event.clientX - this.width / 2
+      this.targetRotation = this.targetRotationOnPointerDown + (this.pointerX - this.pointerXOnPointerDown) * 0.02
+    },
+
+    onPointerUp (event) {
+      if (event.isPrimary === false) return
+      document.removeEventListener('pointermove', this.onPointerMove)
+      document.removeEventListener('pointerup', this.onPointerUp)
+    }
   }
 
 }
