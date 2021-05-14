@@ -65,7 +65,7 @@ export default {
     this.height = document.getElementById('container').clientHeight
     this.scene = new THREE.Scene().add(this.rootGroup)
     this.getReData()
-    this.rootGroup.add(this.createColumns(this.reData))
+    this.createColumns(this.reData)
     this.loadBase(this.modelUrl, 1000)
     this.createLight() // 创建光源
     this.createCamera() // 创建相机
@@ -111,9 +111,13 @@ export default {
 
         // 由于高度有拉伸，需要调整z轴坐标
         mesh.position.set(pX, pY, row.hours * 0.7)
+        mesh.name = row.weekNum + ':' + row.hours
         group.add(mesh)
       }
-      return group
+      group.name = 'columns'
+      this.setCenter(group)
+      // group.position.set(-center.x, -center.y, -center.z)
+      this.rootGroup.add(group)
     },
 
     loadBase (url, scale) {
@@ -123,7 +127,15 @@ export default {
           color: this.colors.A.M,
           wireframe: true}
         )
+        obj.name = 'base'
+        this.setCenter(obj)
         this.rootGroup.add(obj)
+        // 根据base和columns的size调整columns的z轴位置
+        const objSize = this.getSize(obj)
+        const columns = this.rootGroup.getObjectByName('columns')
+        const columnsSize = this.getSize(columns)
+        columns.translateZ((objSize.z + columnsSize.z) / 2)
+        this.rootGroup.lookAt(0, 1, 0)
       })
     },
 
@@ -162,6 +174,17 @@ export default {
       this.camera.aspect = this.width / this.height
       this.camera.updateProjectionMatrix()
       this.renderer.render(this.scene, this.camera)
+    },
+    // 获取物体位置和尺寸
+    setCenter (obj) {
+      const center = new THREE.Vector3()
+      new THREE.Box3().expandByObject(obj).getCenter(center)
+      obj.position.set(-center.x, -center.y, -center.z)
+    },
+    getSize (obj) {
+      const size = new THREE.Vector3()
+      new THREE.Box3().expandByObject(obj).getSize(size)
+      return size
     }
 
   }
