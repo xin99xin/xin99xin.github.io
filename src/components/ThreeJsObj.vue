@@ -1,5 +1,9 @@
 <template>
-  <div id="container"></div>
+  <div>
+    <div id="container" />
+    <Hello class="hello"/>
+    <Form class="form"/>
+  </div>
 </template>
 <script>
 import * as THREE from 'three'
@@ -9,8 +13,11 @@ import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
+import Hello from './Hello'
+import Form from './Form'
 
 export default {
+  components: {Form, Hello},
   data () {
     return {
       textProperties: {
@@ -197,5 +204,19 @@ export default {
   position: absolute;
   width: 100%;
   height: 100%;
+}
+.form {
+  position: fixed;
+  left:50%;
+  bottom:15%;
+  transform:translate(-50%,-50%);
+  z-index:1000;
+}
+.hello {
+  position: fixed;
+  left:20%;
+  top:15%;
+  transform:translate(-50%,-50%);
+  z-index:1000;
 }
 </style>

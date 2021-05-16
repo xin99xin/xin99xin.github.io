@@ -1,24 +1,18 @@
 <template>
-  <div>
-    <div id="container"/>
-    <Hello class="hello"/>
-    <Form class="form"/>
-  </div>
+  <div id="container"></div>
 </template>
 
 <script>
 import * as THREE from 'three'
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
+import {ImprovedNoise} from 'three/examples/jsm/math/ImprovedNoise'
 // import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 // import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 // import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import Hello from './Hello'
-import Form from './Form'
 
 export default {
-  components: {Hello, Form},
-  name: 'ShowModel',
+  name: 'ShowTerrain',
   data () {
     return {
       // 用户信息
@@ -77,7 +71,7 @@ export default {
     this.height = document.getElementById('container').clientHeight
     this.scene = new THREE.Scene().add(this.rootGroup)
     this.getReData()
-    this.createColumns(this.reData)
+    this.createTerrain(this.reData)
     this.loadBase(this.modelUrl, 1000)
     this.createLight() // 创建光源
     this.createCamera() // 创建相机
@@ -96,58 +90,52 @@ export default {
     // 获取数据库查询结果
     getReData () {
       // 生成测试数据
-      for (let index = 0; index <= 51; index++) {
-        this.reData[index] = {'weekNum': index + 1, 'hours': Math.round(Math.random() * 30)}
-      }
+      this.reData = this.funZ(20, 20)
 
       // TODO ajax
     },
 
-    // 创建柱状体
-    createColumns (data) {
-      const boxSize = this.cell.sideLength - this.cell.padding * 2
-      const geometry = new THREE.BoxGeometry(boxSize, boxSize, 1)
-      const group = new THREE.Group()
-      for (const row of data) {
-        const mesh = new THREE.Mesh(
-          geometry,
-          new THREE.MeshBasicMaterial({
-            color: this.colors.A.M,
-            wireframe: true
-          })
-        )
-        mesh.scale.set(1, 1, row.hours * 1.4)// 加高一些
-
-        // 根据weekNum计算当前的单元格坐标
-        let y = (row.weekNum - 1) % this.cell.maxY
-        let x = ~~((row.weekNum - 1) / this.cell.maxY)
-        const pX = x * this.cell.sideLength + this.cell.padding
-        const pY = y * this.cell.sideLength + this.cell.padding
-
-        // 由于高度有拉伸，需要调整z轴坐标
-        mesh.position.set(pX, pY, row.hours * 0.7)
-        mesh.name = row.weekNum + ':' + row.hours
-        group.add(mesh)
+    // 创建柱状山体
+    createTerrain (data) {
+      // 生成地形顶点高度数据
+      // 创建一个平面地形，行列两个方向顶点数据分别为width，height
+      var geometry = new THREE.PlaneBufferGeometry(200, 200, 19, 19)
+      geometry.rotateX(-Math.PI / 2)
+      // 访问几何体的顶点位置坐标数据
+      var vertices = geometry.attributes.position.array
+      // 改变顶点高度值
+      for (var i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
+        vertices[j + 1] = data[i] * 0.8
       }
-      group.name = 'columns'
-      this.setCenter(group)
+      // 不执行computeVertexNormals，没有顶点法向量数据
+      geometry.computeVertexNormals()
+      var material = new THREE.MeshBasicMaterial({
+        color: this.colors.A.M,
+        wireframe: true
+      })
+      var mesh = new THREE.Mesh(geometry, material)
+      mesh.name = 'terrain'
+      mesh.lookAt(0, 1, 0)
+      this.setCenter(mesh)
       // group.position.set(-center.x, -center.y, -center.z)
-      this.rootGroup.add(group)
+      this.rootGroup.add(mesh)
     },
 
     loadBase (url, scale) {
       new OBJLoader().load(url, (obj) => {
         obj.scale.set(scale, scale, scale)
-        obj.children[0].material = new THREE.MeshBasicMaterial({
-          color: this.colors.A.M,
-          wireframe: true}
+        obj.children[0].material = new THREE.MeshBasicMaterial(
+          {
+            color: this.colors.A.M,
+            wireframe: true
+          }
         )
         obj.name = 'base'
         this.setCenter(obj)
         this.rootGroup.add(obj)
         // 根据base和columns的size调整columns的z轴位置
         const objSize = this.getSize(obj)
-        const columns = this.rootGroup.getObjectByName('columns')
+        const columns = this.rootGroup.getObjectByName('terrain')
         const columnsSize = this.getSize(columns)
         columns.translateZ((objSize.z + columnsSize.z) / 2)
         this.rootGroup.lookAt(0, 1, 0)
@@ -223,6 +211,25 @@ export default {
       if (event.isPrimary === false) return
       document.removeEventListener('pointermove', this.onPointerMove)
       document.removeEventListener('pointerup', this.onPointerUp)
+    },
+
+    funZ (width, height) {
+      const size = width * height
+      let data = new Uint8Array(size)
+      let perlin = new ImprovedNoise()
+      let quality = 1
+      const z = Math.random() * 100
+      console.log(z)
+      for (let j = 0; j < 4; j++) {
+        for (let i = 0; i < size; i++) {
+          let x = i % width
+          let y = ~~(i / width)
+          data[i] += Math.abs(perlin.noise(x / quality, y / quality, z) * quality * 1.75)
+        }
+        console.log(data)
+        quality *= 5
+      }
+      return data
     }
   }
 }
