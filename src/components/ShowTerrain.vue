@@ -1,15 +1,11 @@
 <template>
   <div id="container"></div>
 </template>
-
 <script>
 import * as THREE from 'three'
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 import {ImprovedNoise} from 'three/examples/jsm/math/ImprovedNoise'
-// import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-// import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-// import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 export default {
   name: 'ShowTerrain',
@@ -52,7 +48,7 @@ export default {
         maxX: 11, // 最大列数
         maxY: 5, // 最大行数
         sideLength: 15, // 单元格边长
-        padding: 1 // 边缘填充
+        padding: 0 // 边缘填充
       },
       STLFileName: '',
 
@@ -90,8 +86,13 @@ export default {
     // 获取数据库查询结果
     getReData () {
       // 生成测试数据
-      this.reData = this.funZ(20, 20)
-
+      // 生成测试数据
+      for (let index = 0; index <= 51; index++) {
+        this.reData[index] = {
+          'weekNum': index + 1,
+          'hours': Math.round(Math.random() * 30)
+        }
+      }
       // TODO ajax
     },
 
@@ -99,13 +100,15 @@ export default {
     createTerrain (data) {
       // 生成地形顶点高度数据
       // 创建一个平面地形，行列两个方向顶点数据分别为width，height
-      var geometry = new THREE.PlaneBufferGeometry(200, 200, 19, 19)
-      geometry.rotateX(-Math.PI / 2)
+      let w = this.cell.sideLength * this.cell.maxX
+      let h = this.cell.sideLength * this.cell.maxY
+      let depth = this.funZ(w, h, data)
+      var geometry = new THREE.PlaneBufferGeometry(w, h, w - 1, h - 1)
       // 访问几何体的顶点位置坐标数据
       var vertices = geometry.attributes.position.array
       // 改变顶点高度值
-      for (var i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
-        vertices[j + 1] = data[i] * 0.8
+      for (var i = 0, j = 1, l = vertices.length; i < l; i++, j += 3) {
+        vertices[j + 1] = depth[i] * 0.8
       }
       // 不执行computeVertexNormals，没有顶点法向量数据
       geometry.computeVertexNormals()
@@ -115,9 +118,8 @@ export default {
       })
       var mesh = new THREE.Mesh(geometry, material)
       mesh.name = 'terrain'
-      mesh.lookAt(0, 1, 0)
+      // mesh.lookAt(0, 1, 0)
       this.setCenter(mesh)
-      // group.position.set(-center.x, -center.y, -center.z)
       this.rootGroup.add(mesh)
     },
 
@@ -213,20 +215,31 @@ export default {
       document.removeEventListener('pointerup', this.onPointerUp)
     },
 
-    funZ (width, height) {
+    funZ (width, height, depthData) {
       const size = width * height
       let data = new Uint8Array(size)
       let perlin = new ImprovedNoise()
       let quality = 1
-      const z = Math.random() * 100
-      console.log(z)
+      // const z = Math.random() * 100
+      // console.log(z)
       for (let j = 0; j < 4; j++) {
         for (let i = 0; i < size; i++) {
-          let x = i % width
-          let y = ~~(i / width)
-          data[i] += Math.abs(perlin.noise(x / quality, y / quality, z) * quality * 1.75)
+          let y = i % width
+          let x = ~~(i / width)
+          // let index = Math.floor(i / this.cell.sideLength)
+          // console.log(index)
+          // let z = depthData[index]
+          // console.log(z)
+          // let kx = Math.floor(x / 15)
+          // let ky = Math.floor(y / 15)
+          let z = 0
+          if (y > 75) {
+            // z = 50
+            // console.log(y)
+          }
+          data[i] += Math.abs(perlin.noise(x / quality, y / quality, z / quality) * quality * 1.75)
         }
-        console.log(data)
+        // console.log(data)
         quality *= 5
       }
       return data

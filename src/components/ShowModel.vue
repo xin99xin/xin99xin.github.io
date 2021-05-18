@@ -31,6 +31,7 @@ export default {
 
       // 模型相关
       modelUrl: 'static/shapr3d_export_2021-05-09_12h29m.obj',
+      baseSideAngleY: 21.801, // 底座侧边与y轴的夹角
       reData: [],
       rootGroup: new THREE.Group(),
       camera: null,
