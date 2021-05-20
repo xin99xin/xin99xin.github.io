@@ -25,6 +25,7 @@
 import * as THREE from 'three'
 import {OBJLoader} from 'three/examples/jsm/loaders/OBJLoader.js'
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
+import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 // import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 // import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 // import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -106,7 +107,8 @@ export default {
       camera: null,
       scene: null,
       renderer: null,
-      STLFileDownloadPath: '',
+      exporter: null,
+      downloadLink: null,
 
       // 页面属性及鼠标事件相关配置
       Width: null,
@@ -138,21 +140,38 @@ export default {
   },
 
   methods: {
+
     reset () {
       location.href = '/'
     },
+
     serviceWaveLib () {
       console.log('service.....')
     },
+
     downloadFile () {
       console.log('download.....')
+      const blob = this.exporterSTL()
+      const link = document.createElement('a')
+      link.style.display = 'none'
+      link.href = URL.createObjectURL(blob)
+      link.download = this.userInfo.id + '_' + this.userInfo.year + '.stl'
+      link.click()
     },
+
     submitForm () {
       document.getElementById('createButton').disabled = true
       this.getReData()
       document.getElementById('form').hidden = true
       document.getElementById('download').hidden = false
     },
+
+    exporterSTL () {
+      this.exporter = new STLExporter()
+      const result = this.exporter.parse(this.rootGroup)
+      return new Blob([result], {type: 'text/plain'})
+    },
+
     // 获取数据库查询结果
     getReData () {
       const start = new Date()
