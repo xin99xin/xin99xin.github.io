@@ -31,4 +31,16 @@ For a detailed explanation on how things work, check out the [guide](http://vuej
 
 ----
 
+TODO:
+
+- [] 模型底座增加文字
+- [] 表单提交，获取真实用户数据
+- [] 生成stl文件提供下载
+- [] 美化场景和UI元素、配乐
+- [] 增加转场过渡粒子特效动画
+- [] 地貌外观
+
+
+
+
 
