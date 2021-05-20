@@ -133,7 +133,7 @@ export default {
       // TODO ajax
     },
 
-    // 装配场景中所需的所有模型到rootGroup节点，调整相对位置和角度
+    // 创建所需的所有模型到rootGroup节点
     createModels () {
       const material = new THREE.MeshBasicMaterial({
         color: this.model.colors.A.M,
@@ -153,6 +153,7 @@ export default {
       this.createText(this.rootGroup, logoTextOptions.text, logoTextOptions, material, 'logo')
     },
 
+    // 调整rootGroup中各节点的相对位置和角度
     assemblyModels () {
       // 根据base斜边角度调整文字位置和角度
       const logo = this.rootGroup.getObjectByName('logo')
@@ -315,7 +316,11 @@ export default {
     },
 
     angle2Radians (angle) {
-      return angle * Math.PI / 180
+      if (angle === null) {
+        return 0
+      } else {
+        return angle * Math.PI / 180
+      }
     }
 
   }
