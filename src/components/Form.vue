@@ -10,7 +10,8 @@ export default {
   name: 'Form',
   data () {
     return {
-      userId: null
+      userId: null,
+      userName: 'zodiac'
     }
   }
 }

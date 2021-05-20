@@ -1,8 +1,23 @@
 <template>
   <div>
     <div id="container"/>
-    <Hello class="hello"/>
-    <Form class="form"/>
+    <Hello class="hello" />
+    <div class="form" id="form">
+      <input class="height1" maxlength="50" type="text" placeholder="请输入微澜id" v-model="userInfo.id">&nbsp;&nbsp;
+      <select class="height2" v-model="userInfo.year">
+        <option>2017</option>
+        <option>2018</option>
+        <option>2019</option>
+        <option>2020</option>
+        <option>2021</option>
+      </select>&nbsp;&nbsp;
+      <input class="height2" type="button" id="createButton" value="生成3d打印模型" v-on:click="submitForm">
+    </div>
+    <div class="form" id="download" hidden>
+      <input class="height2" type="button" value="委托微澜制作" v-on:click="serviceWaveLib">&nbsp;&nbsp;
+      <input class="height2" type="button" value="下载3d打印文件" v-on:click="downloadFile">&nbsp;&nbsp;
+      <input class="height2" type="button" value="重新生成" v-on:click="reset">
+    </div>
   </div>
 </template>
 
@@ -15,6 +30,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls'
 // import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import Hello from './Hello'
 import Form from './Form'
+import Axios from 'axios'
 
 export default {
   components: {Hello, Form},
@@ -23,7 +39,7 @@ export default {
     return {
       // 用户信息
       userInfo: {
-        id: 0,
+        id: null,
         name: '@ ' + 'zodiac',
         year: 2021,
         gender: ''
@@ -85,6 +101,7 @@ export default {
       },
 
       reData: [],
+      apiUrl: '/api/getUserDuty/', // 数据接口地址
       rootGroup: null,
       camera: null,
       scene: null,
@@ -106,10 +123,9 @@ export default {
     this.container = document.getElementById('container')
     this.width = this.container.clientWidth
     this.height = this.container.clientHeight
-    this.scene = new THREE.Scene().add(this.rootGroup)
+    this.scene = new THREE.Scene()
+    this.scene.add(this.rootGroup)
 
-    this.getReData()
-    this.createModels()
     this.createCamera()
     this.renderer = new THREE.WebGLRenderer()
     this.renderer.setSize(this.width, this.height)
@@ -122,6 +138,21 @@ export default {
   },
 
   methods: {
+    reset () {
+      location.href = '/'
+    },
+    serviceWaveLib () {
+      console.log('service.....')
+    },
+    downloadFile () {
+      console.log('download.....')
+    },
+    submitForm () {
+      document.getElementById('createButton').disabled = true
+      this.getReData()
+      document.getElementById('form').hidden = true
+      document.getElementById('download').hidden = false
+    },
     // 获取数据库查询结果
     getReData () {
       const start = new Date()
@@ -129,8 +160,18 @@ export default {
       for (let index = 0; index <= 51; index++) {
         this.reData[index] = {'weekNum': index + 1, 'hours': Math.round(Math.random() * 30)}
       }
-      console.log('data loaded by:' + (new Date() - start) + 'ms')
-      // TODO ajax
+      Axios
+        .get(this.apiUrl + this.userInfo.year + '/' + this.userInfo.id)
+        .then(response => {
+          console.log(response.data)
+          console.log('data loaded by:' + (new Date() - start) + 'ms')
+          this.reData = response.data
+          this.createModels()
+        })
+        .catch(error => {
+          console.log(error)
+          this.createModels()
+        })
     },
 
     // 创建所需的所有模型到rootGroup节点
@@ -174,13 +215,13 @@ export default {
       const cellsSize = this.getSize(cells)
       cells.translateZ((baseSize.z + cellsSize.z) / 2)
       // 修改模型整体朝向
-      this.rootGroup.lookAt(0, 1, 0)
+      // this.rootGroup.lookAt(0, 1, 0)
+      this.rootGroup.translateZ(baseSize.z / 2)
     },
 
     checkGroupChildren () {
       let rootChildren = this.rootGroup.children
-      console.log('rootGroup\'s children num is ' + rootChildren.length)
-      if (rootChildren.length === 4) {
+      if (rootChildren.length >= 4) {
         this.assemblyModels()
       }
     },
@@ -188,17 +229,25 @@ export default {
     // 用指定的材质载入Obj格式的外部模型到group节点的坐标原点，可指定等比例放缩的倍数
     loadModel (group, objUrl, material, scale, name) {
       const start = new Date()
-      new OBJLoader().load(objUrl, (obj) => {
-        if (scale != null) {
-          obj.scale.set(scale, scale, scale)
-        }
-        obj.children[0].material = material
-        if (name != null) obj.name = name
-        this.setCenter(obj)
-        group.add(obj)
-        console.log(name + ' loaded by:' + (new Date() - start) + 'ms')
-        this.checkGroupChildren()
-      })
+      new OBJLoader().load(
+        objUrl,
+        (obj) => {
+          if (scale != null) {
+            obj.scale.set(scale, scale, scale)
+          }
+          obj.children[0].material = material
+          if (name != null) obj.name = name
+          this.setCenter(obj)
+          group.add(obj)
+          console.log(name + ' loaded by:' + (new Date() - start) + 'ms')
+          this.checkGroupChildren()
+        },
+        (info) => {
+          console.log(info)
+        },
+        (error) => {
+          console.log(error)
+        })
     },
 
     // 用指定的材质根据data创建一组柱状体到group节点的坐标原点
@@ -230,15 +279,23 @@ export default {
     createText (group, text, options, material, name) {
       const start = new Date()
       const fontUrl = options.fontUrl
-      new THREE.FontLoader().load(fontUrl, (font) => {
-        options.font = font
-        const textGeo = new THREE.TextGeometry(text, options).center()
-        const mesh = new THREE.Mesh(textGeo, material)
-        if (name != null) mesh.name = name
-        group.add(mesh)
-        console.log(name + ' created by:' + (new Date() - start) + 'ms')
-        this.checkGroupChildren()
-      })
+      new THREE.FontLoader().load(
+        fontUrl,
+        (font) => {
+          options.font = font
+          const textGeo = new THREE.TextGeometry(text, options).center()
+          const mesh = new THREE.Mesh(textGeo, material)
+          if (name != null) mesh.name = name
+          group.add(mesh)
+          console.log(name + ' created by:' + (new Date() - start) + 'ms')
+          this.checkGroupChildren()
+        },
+        (info) => {
+          console.log(info)
+        },
+        (error) => {
+          console.log(error)
+        })
     },
 
     createLight () {
@@ -248,7 +305,7 @@ export default {
     createCamera () {
       const k = this.width / this.height // 窗口宽高比
       this.camera = new THREE.PerspectiveCamera(30, k, 1, 2500)
-      this.camera.position.set(0, 0, 700)
+      this.camera.position.set(0, -700, 300)
       this.camera.lookAt(this.rootGroup.position) // 没有controls的情况必须设置，血的教训
       this.scene.add(this.camera)
     },
@@ -268,6 +325,8 @@ export default {
       controls.maxDistance = 2000
       controls.enableDamping = true
       controls.dampingFactor = 0.8
+      controls.maxAzimuthAngle = 0
+      controls.minAzimuthAngle = 0
     },
 
     // 窗口变动触发的函数
@@ -331,5 +390,34 @@ export default {
   position: absolute;
   width: 100%;
   height: 100%;
+}
+.height1{
+  height: 30px;
+}
+.height2{
+  height: 36px;
+}
+.form {
+  position: fixed;
+  left:50%;
+  bottom:15%;
+  transform:translate(-50%,-50%);
+  z-index:1000;
+}
+.hello {
+  position: fixed;
+  left:20%;
+  top:15%;
+  transform:translate(-50%,-50%);
+  z-index:1000;
+}
+h1, h2 {
+  font-weight: normal;
+}
+p {
+  font-size: x-small;
+}
+.hello{
+  color: #f7fbfc;
 }
 </style>
